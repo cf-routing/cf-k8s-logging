@@ -36,10 +36,44 @@ data:
       read_from_head true
     </source>
 
+    <source>
+      @type tail
+      @id in_tail_ingressgateway_logs
+      path /var/log/containers/istio-ingressgateway*istio-proxy*.log
+      pos_file /var/log/fluentd-istio-ingressgateway.log.pos
+      tag istio-ingressgateway
+      refresh_interval 1
+      <parse>
+         @type json
+         format json
+         time_key time
+         time_format %Y-%m-%dT%H:%M:%S.%NZ
+      </parse>
+      read_from_head true
+    </source>
+
     # Filters
     <match kubernetes.var.log.containers.fluentd**>
       @type null
     </match>
+
+    <filter istio-ingressgateway>
+      @type parser
+      format json
+      key_name log
+    </filter>
+
+    <filter istio-ingressgateway>
+      @type record_transformer
+      enable_ruby
+      <record>
+        app_id ${record["app_id"]}
+        instance_id 0
+        log ${record.to_json}
+        source_type RTR
+        structured_data \[tags@47450 source_type="RTR"\]
+      </record>
+    </filter>
 
     <filter kubernetes.**>
       @type kubernetes_metadata
